@@ -4,38 +4,62 @@ import pygame
 import sys
 from pygame.locals import *
 import datetime
+import csv
 
 import tkinter
+from functools import partial
 
 width=900
 height=540
 
-fontname="yugothicyugothicuilight"
-timefontname="msgothicmsuigothicmspgothic"
+fontname="yugothic"
+timefontname="msgothic"
 
 
-data=[["東京地下鉄1000系","Tokyo Metro Series 1000","2012年-    運行区間: 銀座線 浅草-渋谷"],
-      ["小田急50000形 VSE","Odakyu 50000 Series (VSE)","新宿-箱根湯本,片瀬江ノ島"],
-      ["JR東海 キヤ97系200番台","JR Central Series KiYa 97-200","東海区間はどこでも行けるはず。知らんけど。"],
-      ["京王3000系+1000系 7色7重連","Keio 3000 & 1000 Series 7-colors","なんだこれは"]]
-infomes="東京大学へようこそ！"
+data=[["test","",""],
+      ["てすと","",""],
+      ["テスト","",""],
+      ["確認","",""]]
+infomes="これは確認テストです。"
 position=[width-140,width-140,width-140,width-140,width-140]
 positionreset=[130-width,130-width,130-width,130-width,130-width]
 
 root=[]
 txt=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
 infotxt=[]
+accident=[0,0,0,0]
+traindatalist=[["テスト1","Test1","これはテストです"]]
+traindatalist_st=[]
+traindatalist_sv=[]
+traindatalist_lb=[]
+traindatalist_sc=[]
 
-def close_edit_window():
-    global data,txt,infomes,infotxt,root
-    for i in range(4):
+def writing_window():
+    global root,txt,infotxt,infomes,width,height,fontname,timefontname
+    
+#メイン画面に反映
+def refrection(i):
+    global infomes,infotxt,data,txt
+    if(i<4):
         for j in range(3):
             data[i][j]=txt[i][j].get()
-    infomes=infotxt.get()
-    root.destroy()
+        infomes=infotxt.get()
+    else:
+        print(i)
+
+#ワンタッチ線路封鎖
+def accidenting(i):
+    global infomes,infotxt,data,txt,accident
+    if(accident[i]==0):
+        data[i][0]="車両・線路確認"
+        data[i][1]="Something wrong is occuring!"
+        data[i][2]="しばらくお待ちください"
+    else:
+        refrection(i)
 
 def sys_close():
-    global data,infomes
+    global data,txt,infomes,infotxt,root
+    root.destroy()
     with open("platformdisplaydata.txt","w",encoding="UTF-8") as f:
         for i in range(4):
             for j in range(3):
@@ -44,9 +68,67 @@ def sys_close():
     pygame.quit()
     sys.exit()
 
+#ワンタッチ回送列車
+def outofservicebutton(i):
+    global infomes,data,txt
+    if(i<4):
+        txt[i][0].delete(0,"end")
+        txt[i][1].delete(0,"end")
+        txt[i][2].delete(0,"end")
+        txt[i][0].insert(0,"回送")
+        txt[i][1].insert(0,"Out of service")
+        txt[i][2].insert(0,"この列車は回送列車です。ご利用になれませんのでご注意ください。")
+    else:
+        print(i)
+    refrection(i)
+
+#CSV読み込み
+def csvreader():
+    global traindatalist
+    with open("train_list.csv",encoding="utf-8") as traindatalist_csv:
+        traindatalist_csvr=csv.reader(traindatalist_csv)
+        traindatalist=[row for row in traindatalist_csvr]
+    print(traindatalist)
+    numcount=0
+    for train_d in traindatalist:
+        traintext = train_d[0]+' '+train_d[2]
+        print(traintext)
+        if(numcount>=len(traindatalist_st)):
+            traindatalist_st.append(traintext)
+        else:
+            traindatalist_st[numcount]=traintext
+        numcount+=1
+#CSV書き出し
+def csvwriter(txtnum):
+    global txt,data,traindatalist_sv,traindatalist_sc,traindatalist_lb,traindatalist_st
+    with open("train_list.csv",'a',encoding="utf-8",newline='') as traindatalist_csv:
+        write_csv=csv.writer(traindatalist_csv)
+        write_csv.writerow([txt[txtnum][0].get(),txt[txtnum][1].get(),txt[txtnum][2].get()])
+    csvreader()
+    traindatalist_sv = tkinter.StringVar(value=traindatalist_st)
+    traindatalist_lb = tkinter.Listbox(listvariable=traindatalist_sv,width=90,height=8)
+    traindatalist_sc = tkinter.Scrollbar(orient=tkinter.VERTICAL, command=traindatalist_lb.yview)
+    traindatalist_lb["yscrollcommand"] = traindatalist_sc.set
+    traindatalist_lb.grid(row=0, column=0)
+    traindatalist_sc.grid(row=0, column=1, sticky=(tkinter.N, tkinter.S))
+    traindatalist_lb.place(x=10,y=460)
+    traindatalist_sc.place(x=550,y=460,height=135)
+    
+#選択されたデータ読み込み
+def dataroader(txtnum):
+    global traindatalist,txt,traindatalist_lb
+    txt[txtnum][0].delete(0,"end")
+    txt[txtnum][1].delete(0,"end")
+    txt[txtnum][2].delete(0,"end")
+    listnum=traindatalist_lb.curselection()
+    print(listnum)
+    txt[txtnum][0].insert(0,traindatalist[listnum[0]][0])
+    txt[txtnum][1].insert(0,traindatalist[listnum[0]][1])
+    txt[txtnum][2].insert(0,traindatalist[listnum[0]][2])
+
 # define a main function
 def main():
-    global root,txt,infotxt,infomes,width,height,fontname,timefontname
+    global root,txt,infotxt,infomes,width,height,fontname,timefontname,traindatalist,traindatalist_lb,traindatalist_sc,traindatalist_st,traindatalist_sv
 
     try:
         with open("platformdisplaydata.txt","r",encoding="UTF-8") as f:
@@ -69,15 +151,72 @@ def main():
     sysfont=pygame.font.SysFont(fontname,48)
     minifont=pygame.font.SysFont(fontname,24)
     timefont=pygame.font.SysFont(timefontname,24)
-    
     clock = pygame.time.Clock()
-    
-    while True:
+
+    #ここからサブウィンドウ処理
+    root = tkinter.Tk()
+    root.geometry('600x600')
+    root.title('情報を編集')
+    root.resizable(width=False,height=False)
+    lbl=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
+    btn=[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]
+    for i in range(4):
+        print(i)
+        lbl[i][0] = tkinter.Label(text=str(i+1)+'番線')
+        lbl[i][0].place(x=10, y=10+i*90)
+        txt[i][0] = tkinter.Entry(width=40)
+        txt[i][0].place(x=80, y=10+i*90)
+        txt[i][0].delete(0, tkinter.END)
+        txt[i][0].insert(0,data[i][0])
+        btn[i][0] = tkinter.Button(width=5,text='反映',command=partial(refrection,i))
+        btn[i][0].place(x=330,y=10+i*90)
+        btn[i][1] = tkinter.Button(width=5,text='回送',command=partial(outofservicebutton,i))
+        btn[i][1].place(x=380,y=10+i*90)
+        btn[i][2] = tkinter.Button(width=5,text='非常',command=partial(accidenting,i))
+        btn[i][2].place(x=430,y=10+i*90)
+        btn[i][3] = tkinter.Button(width=5,text='読込',command=partial(dataroader,i))
+        btn[i][3].place(x=480,y=10+i*90)
+        btn[i][4] = tkinter.Button(width=5,text='書出',command=partial(csvwriter,i))
+        btn[i][4].place(x=530,y=10+i*90)
+        lbl[i][1] = tkinter.Label(text=str(i+1)+'番線 英語')
+        lbl[i][1].place(x=10, y=40+i*90)
+        txt[i][1] = tkinter.Entry(width=40)
+        txt[i][1].place(x=80, y=40+i*90)
+        txt[i][1].delete(0, tkinter.END)
+        txt[i][1].insert(0,data[i][1])
+        lbl[i][2] = tkinter.Label(text=str(i+1)+'番線 詳細')
+        lbl[i][2].place(x=10, y=70+i*90)
+        txt[i][2] = tkinter.Entry(width=80)
+        txt[i][2].place(x=80, y=70+i*90)
+        txt[i][2].delete(0, tkinter.END)
+        txt[i][2].insert(0,data[i][2])
+    infolbl = tkinter.Label(text='ご案内')
+    infolbl.place(x=10,y=370)
+    infotxt = tkinter.Entry(width=80)
+    infotxt.place(x=80,y=370)
+    infotxt.delete(0, tkinter.END)
+    infotxt.insert(0,infomes)
+    #ここから読み込みデータの処理
+    csvreader()
+    traindatalist_sv = tkinter.StringVar(value=traindatalist_st)
+    traindatalist_lb = tkinter.Listbox(listvariable=traindatalist_sv,width=90,height=8)
+    traindatalist_sc = tkinter.Scrollbar(orient=tkinter.VERTICAL, command=traindatalist_lb.yview)
+    traindatalist_lb["yscrollcommand"] = traindatalist_sc.set
+    traindatalist_lb.grid(row=0, column=0)
+    traindatalist_sc.grid(row=0, column=1, sticky=(tkinter.N, tkinter.S))
+    traindatalist_lb.place(x=10,y=460)
+    traindatalist_sc.place(x=550,y=460,height=135)
+
+
+    root.protocol("WM_DELETE_WINDOW", sys_close)
+    #ここまでサブウィンドウ処理
+
+    while True:        
         now=datetime.datetime.now()
         sec=now.second
         usec=now.microsecond
-
         window.fill((0,0,0))
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys_close()
@@ -85,43 +224,6 @@ def main():
                 width=event.w
                 height=event.h
                 window = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
-            elif event.type==KEYDOWN:
-                if event.key==K_ESCAPE:
-                    sys_close()
-                elif event.key==K_e:
-                    root = tkinter.Tk()
-                    root.geometry('600x400')
-                    root.title('情報を編集')
-                    root.resizable(width=False,height=False)
-                    lbl=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-                    for i in range(4):
-                        lbl[i][0] = tkinter.Label(text=str(i+1)+'番線')
-                        lbl[i][0].place(x=10, y=10+i*90)
-                        txt[i][0] = tkinter.Entry(width=40)
-                        txt[i][0].place(x=80, y=10+i*90)
-                        txt[i][0].delete(0, tkinter.END)
-                        txt[i][0].insert(0,data[i][0])
-                        lbl[i][1] = tkinter.Label(text=str(i+1)+'番線 英語')
-                        lbl[i][1].place(x=10, y=40+i*90)
-                        txt[i][1] = tkinter.Entry(width=40)
-                        txt[i][1].place(x=80, y=40+i*90)
-                        txt[i][1].delete(0, tkinter.END)
-                        txt[i][1].insert(0,data[i][1])
-                        lbl[i][2] = tkinter.Label(text=str(i+1)+'番線 詳細')
-                        lbl[i][2].place(x=10, y=70+i*90)
-                        txt[i][2] = tkinter.Entry(width=80)
-                        txt[i][2].place(x=80, y=70+i*90)
-                        txt[i][2].delete(0, tkinter.END)
-                        txt[i][2].insert(0,data[i][2])
-                    infolbl = tkinter.Label(text='ご案内')
-                    infolbl.place(x=10,y=370)
-                    infotxt = tkinter.Entry(width=80)
-                    infotxt.place(x=80,y=370)
-                    infotxt.delete(0, tkinter.END)
-                    infotxt.insert(0,infomes)
-                    root.protocol("WM_DELETE_WINDOW", close_edit_window)
-                    root.mainloop()
-                    
         
        
         # 1番線
@@ -131,7 +233,7 @@ def main():
         window.blit(sur,(140+position[0],130))
         positionreset[0]=-sur.get_width()-50
 
-        # 1番線
+        # 2番線
         sur=sysfont.render(data[1][0 if (sec%20<15) else 1], False, (255,128,0))
         window.blit(sur,(140,170))
         sur=minifont.render(data[1][2], False, (0,192,0))
@@ -207,6 +309,7 @@ def main():
 
         pygame.display.update()
         clock.tick(50)
+        root.update()
      
      
 # run the main function only if this module is executed as the main script
