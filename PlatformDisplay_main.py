@@ -33,6 +33,8 @@ traindatalist_st=[]
 traindatalist_sv=[]
 traindatalist_lb=[]
 traindatalist_sc=[]
+linename=[["1番線","2番線","3番線","4番線"],["Track 1","Track 2","Track 3", "Track 4"]]
+numberoflines=4
 
 def writing_window():
     global root,txt,infotxt,infomes,width,height,fontname,timefontname
@@ -40,7 +42,7 @@ def writing_window():
 #メイン画面に反映
 def refrection(i):
     global infomes,infotxt,data,txt
-    if(i<4):
+    if(i<numberoflines):
         for j in range(3):
             data[i][j]=txt[i][j].get()
         infomes=infotxt.get()
@@ -61,7 +63,7 @@ def sys_close():
     global data,txt,infomes,infotxt,root
     root.destroy()
     with open("platformdisplaydata.txt","w",encoding="UTF-8") as f:
-        for i in range(4):
+        for i in range(numberoflines):
             for j in range(3):
                 f.write(data[i][j]+"\n")
         f.write(infomes+"\n")
@@ -128,23 +130,33 @@ def dataroader(txtnum):
 
 # define a main function
 def main():
-    global root,txt,infotxt,infomes,width,height,fontname,timefontname,traindatalist,traindatalist_lb,traindatalist_sc,traindatalist_st,traindatalist_sv
-
-    try:
-        with open("platformdisplaydata.txt","r",encoding="UTF-8") as f:
-            dt=f.readlines()
-        for i in range(4):
-            for j in range(3):
-                data[i][j]=dt[i*3+j].replace("\n","")
-        infomes=dt[12].replace("\n","")
-    except:
-        pass
-
-
+    global root,txt,infotxt,infomes,width,height,fontname,timefontname,traindatalist,traindatalist_lb,traindatalist_sc,traindatalist_st,traindatalist_sv,linename,numberoflines
     pygame.init()
 
     # print(sorted(pygame.font.get_fonts()))
-
+    
+    numberoflines=input('線路数を入力してください')
+    if numberoflines.isdecimal():
+        numberoflines=int(numberoflines)
+    else:
+        numberoflines=4
+    try:
+        with open("platformdisplaydata.txt","r",encoding="UTF-8") as f:
+            dt=f.readlines()
+        for i in range(numberoflines):
+            if i>= len(data):
+                data.append([0,0,0])
+            for j in range(3):
+                data[i][j]=dt[i*3+j].replace("\n","")
+        infomes=dt[3*numberoflines].replace("\n","")
+    except:
+        pass
+    for i in range(numberoflines):
+        if i>=len(linename[0]):
+            linename[0].append(0)
+            linename[1].append(0)
+        linename[0][i]=str(i+1)+'番線'
+        linename[1][i]='Track '+str(i+1)
     window = pygame.display.set_mode((width,height), pygame.RESIZABLE)
     pygame.display.set_caption("Window")
 
@@ -155,14 +167,22 @@ def main():
 
     #ここからサブウィンドウ処理
     root = tkinter.Tk()
-    root.geometry('600x600')
+    root.geometry("200x200")
     root.title('情報を編集')
-    root.resizable(width=False,height=False)
+    root.resizable(width=True,height=True)
     lbl=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
     btn=[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]
-    for i in range(4):
+    for i in range(numberoflines):
         print(i)
-        lbl[i][0] = tkinter.Label(text=str(i+1)+'番線')
+        if i>=len(lbl):
+            lbl.append([0,0,0])
+        if i>=len(txt):
+            txt.append([0,0,0])
+        if i>=len(btn):
+            btn.append([0,0,0,0,0])
+        if i>=len(data):
+            data.append(["test","",""])
+        lbl[i][0] = tkinter.Label(text=linename[0][i])
         lbl[i][0].place(x=10, y=10+i*90)
         txt[i][0] = tkinter.Entry(width=40)
         txt[i][0].place(x=80, y=10+i*90)
@@ -178,22 +198,22 @@ def main():
         btn[i][3].place(x=480,y=10+i*90)
         btn[i][4] = tkinter.Button(width=5,text='書出',command=partial(csvwriter,i))
         btn[i][4].place(x=530,y=10+i*90)
-        lbl[i][1] = tkinter.Label(text=str(i+1)+'番線 英語')
+        lbl[i][1] = tkinter.Label(text=linename[0][i]+' 英語')
         lbl[i][1].place(x=10, y=40+i*90)
         txt[i][1] = tkinter.Entry(width=40)
         txt[i][1].place(x=80, y=40+i*90)
         txt[i][1].delete(0, tkinter.END)
         txt[i][1].insert(0,data[i][1])
-        lbl[i][2] = tkinter.Label(text=str(i+1)+'番線 詳細')
+        lbl[i][2] = tkinter.Label(text=linename[0][i]+' 詳細')
         lbl[i][2].place(x=10, y=70+i*90)
         txt[i][2] = tkinter.Entry(width=80)
         txt[i][2].place(x=80, y=70+i*90)
         txt[i][2].delete(0, tkinter.END)
         txt[i][2].insert(0,data[i][2])
     infolbl = tkinter.Label(text='ご案内')
-    infolbl.place(x=10,y=370)
+    infolbl.place(x=10,y=10+numberoflines*90)
     infotxt = tkinter.Entry(width=80)
-    infotxt.place(x=80,y=370)
+    infotxt.place(x=80,y=10+numberoflines*90)
     infotxt.delete(0, tkinter.END)
     infotxt.insert(0,infomes)
     #ここから読み込みデータの処理
@@ -204,8 +224,8 @@ def main():
     traindatalist_lb["yscrollcommand"] = traindatalist_sc.set
     traindatalist_lb.grid(row=0, column=0)
     traindatalist_sc.grid(row=0, column=1, sticky=(tkinter.N, tkinter.S))
-    traindatalist_lb.place(x=10,y=460)
-    traindatalist_sc.place(x=550,y=460,height=135)
+    traindatalist_lb.place(x=10,y=40+numberoflines*90)
+    traindatalist_sc.place(x=550,y=40+numberoflines*90,height=135)
 
 
     root.protocol("WM_DELETE_WINDOW", sys_close)
@@ -225,41 +245,26 @@ def main():
                 height=event.h
                 window = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
         
-       
-        # 1番線
-        sur=sysfont.render(data[0][0 if (sec%20<15) else 1], False, (255,128,0))
-        window.blit(sur,(140,70))
-        sur=minifont.render(data[0][2], False, (0,192,0))
-        window.blit(sur,(140+position[0],130))
-        positionreset[0]=-sur.get_width()-50
-
-        # 2番線
-        sur=sysfont.render(data[1][0 if (sec%20<15) else 1], False, (255,128,0))
-        window.blit(sur,(140,170))
-        sur=minifont.render(data[1][2], False, (0,192,0))
-        window.blit(sur,(140+position[1],230))
-        positionreset[1]=-sur.get_width()-50
-
-        # 3番線
-        sur=sysfont.render(data[2][0 if (sec%20<15) else 1], False, (255,128,0))
-        window.blit(sur,(140,270))
-        sur=minifont.render(data[2][2], False, (0,192,0))
-        window.blit(sur,(140+position[2],330))
-        positionreset[2]=-sur.get_width()-50
-
-        # 4番線
-        sur=sysfont.render(data[3][0 if (sec%20<15) else 1], False, (255,128,0))
-        window.blit(sur,(140,370))
-        sur=minifont.render(data[3][2], False, (0,192,0))
-        window.blit(sur,(140+position[3],430))
-        positionreset[3]=-sur.get_width()-50
-
+        for i in range(numberoflines):
+            if i >= len(position):
+                position.append(width-140)
+            if i >= len(positionreset):
+                positionreset.append(0)
+            sur=sysfont.render(data[i][0 if (sec%20<15)else 1], False, (255,128,0))
+            window.blit(sur,(140,70+i*100))
+            sur=minifont.render(data[i][2],False,(0,192,0))
+            window.blit(sur,(140+position[i],130+100*i))
+            positionreset[i]=-sur.get_width()-50
         # ご案内
+        if len(position)<= numberoflines:
+            position.append(width-140)
+        if len(positionreset)<=numberoflines:
+            positionreset.append(0)
+        positionreset[numberoflines]=-sur.get_width()-50
         sur=minifont.render(infomes, False, (0,192,0))
-        window.blit(sur,(140+position[4],480))
-        positionreset[4]=-sur.get_width()-50
+        window.blit(sur,(140+position[numberoflines],80+100*numberoflines))
 
-        for i in range(5):
+        for i in range(numberoflines+1):
             position[i]-=1
             if position[i]<positionreset[i]:
                 position[i]=width-140
@@ -267,12 +272,10 @@ def main():
         window.fill((120,120,120),(0,0,width,65))
         window.fill((120,120,120),(0,0,130,height))
         window.fill((120,120,120),(width-20,0,20,height))
-        window.fill((120,120,120),(0,520,width,height-520))
-        window.fill((120,120,120),(0,160,width,5))
-        window.fill((120,120,120),(0,260,width,5))
-        window.fill((120,120,120),(0,360,width,5))
-        window.fill((120,120,120),(0,460,width,5))
+        for i in range(numberoflines):
+            window.fill((120,120,120),(0,160+100*i,width,5))
         
+        window.fill((120,120,120),(0,120+100*numberoflines,width,height-120-100*numberoflines))
         window.fill((0,0,0),(width-100,10,80,35)) # 時刻の背景
         sur=timefont.render(now.strftime("%H"+(":" if usec%1000000<500000 else " ")+"%M"), False, (255,128,0))
         window.blit(sur,(width-90,15))
@@ -283,27 +286,13 @@ def main():
 
         sur=sysfont.render("走行中の車両", True, (255,255,255))
         window.blit(sur,(50,5))
-        sur=minifont.render("内側が1番線で、外側が4番線です", True, (255,255,255))
-        window.blit(sur,(350,25))
-
-        sur=sysfont.render("1番線", True, (255,255,255))
-        window.blit(sur,(5,70))
-        sur=minifont.render("Track 1", True, (255,255,255))
-        window.blit(sur,(5,130))
-        sur=sysfont.render("2番線", True, (255,255,255))
-        window.blit(sur,(5,170))
-        sur=minifont.render("Track 2", True, (255,255,255))
-        window.blit(sur,(5,230))
-        sur=sysfont.render("3番線", True, (255,255,255))
-        window.blit(sur,(5,270))
-        sur=minifont.render("Track 3", True, (255,255,255))
-        window.blit(sur,(5,330))
-        sur=sysfont.render("4番線", True, (255,255,255))
-        window.blit(sur,(5,370))
-        sur=minifont.render("Track 4", True, (255,255,255))
-        window.blit(sur,(5,430))
+        for i in range(numberoflines):
+            sur=sysfont.render(linename[0][i],True,(255,255,255))
+            window.blit(sur,(5,70+100*i))
+            sur=minifont.render(linename[1][i],True,(255,255,255))
+            window.blit(sur,(5,130+100*i))
         sur=minifont.render("ご案内", True, (255,255,255))
-        window.blit(sur,(5,480))
+        window.blit(sur,(5,80+100*numberoflines))
 
         # pygame.transform.smoothscale
 
