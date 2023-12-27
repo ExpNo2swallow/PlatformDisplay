@@ -135,7 +135,7 @@ def main():
 
     # print(sorted(pygame.font.get_fonts()))
     
-    numberoflines=input('線路数を入力してください')
+    numberoflines=input('線路数を入力してください >>')
     if numberoflines.isdecimal():
         numberoflines=int(numberoflines)
     else:
