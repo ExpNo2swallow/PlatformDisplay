@@ -155,6 +155,8 @@ def main():
         if i>=len(linename[0]):
             linename[0].append(0)
             linename[1].append(0)
+        if i>=len(accident):
+            accident.append(0)
         linename[0][i]=str(i+1)+'番線'
         linename[1][i]='Track '+str(i+1)
     window = pygame.display.set_mode((width,height), pygame.RESIZABLE)
@@ -173,7 +175,6 @@ def main():
     lbl=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
     btn=[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]
     for i in range(numberoflines):
-        print(i)
         if i>=len(lbl):
             lbl.append([0,0,0])
         if i>=len(txt):
