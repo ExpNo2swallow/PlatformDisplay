@@ -1,16 +1,20 @@
-# 実行前にpygameをインストールする必要があります
+# 実行前にpygameおよびpillowをインストールする必要があります
 
 import pygame
 import sys
 from pygame.locals import *
 import datetime
 import csv
+import os
+from PIL import Image, ImageFilter, ImageTk
 
 import tkinter
 from functools import partial
 
 width=900
 height=540
+
+interval=10 #スライドの切り替わるタイミング
 
 fontname="yugothic"
 timefontname="msgothic"
@@ -36,6 +40,15 @@ traindatalist_sc=[]
 linename=[["1番線","2番線","3番線","4番線"],["Track 1","Track 2","Track 3", "Track 4"]]
 numberoflines=4
 
+traininfoshow=[]
+traininfopath=[]
+traininfopic=[]
+traininfocanvas=[]
+traininfolavel=""
+traininfoslides=[]
+nowshowingslides=0
+global showing_image
+
 def writing_window():
     global root,txt,infotxt,infomes,width,height,fontname,timefontname
     
@@ -60,8 +73,9 @@ def accidenting(i):
         refrection(i)
 
 def sys_close():
-    global data,txt,infomes,infotxt,root
+    global data,txt,infomes,infotxt,root,traininfoshow
     root.destroy()
+    traininfoshow.destroy()
     with open("platformdisplaydata.txt","w",encoding="UTF-8") as f:
         for i in range(numberoflines):
             for j in range(3):
@@ -130,7 +144,7 @@ def dataroader(txtnum):
 
 # define a main function
 def main():
-    global root,txt,infotxt,infomes,width,height,fontname,timefontname,traindatalist,traindatalist_lb,traindatalist_sc,traindatalist_st,traindatalist_sv,linename,numberoflines
+    global root,txt,infotxt,infomes,width,height,fontname,timefontname,traindatalist,traindatalist_lb,traindatalist_sc,traindatalist_st,traindatalist_sv,linename,numberoflines,traininfopath,traininfopic,traininfocanvas,traininfoshow,traininfoslides,showing_image
     pygame.init()
 
     # print(sorted(pygame.font.get_fonts()))
@@ -167,7 +181,7 @@ def main():
     timefont=pygame.font.SysFont(timefontname,24)
     clock = pygame.time.Clock()
 
-    #ここからサブウィンドウ処理
+    #ここから制御サブウィンドウ処理
     root = tkinter.Tk()
     root.geometry("200x200")
     root.title('情報を編集')
@@ -230,7 +244,59 @@ def main():
 
 
     root.protocol("WM_DELETE_WINDOW", sys_close)
-    #ここまでサブウィンドウ処理
+    #ここまで制御サブウィンドウ処理
+
+    #ここから解説ウィンドウ初期化処理
+
+    traininfoshow=tkinter.Tk()
+    traininfoshow.title("車両解説")
+    traininfoshow.protocol("WM_DELETE_WINDOW", sys_close)
+    traininfopic=[]
+    try:
+        with open("platformdisplaypath.txt","r",encoding="UTF-8") as f:
+            dt=f.readlines()
+        for i in range(numberoflines):
+            traininfopath.append(dt[i].replace("\n",""))
+    except:
+        pass
+    for i in range(numberoflines):
+        if(i>=len(traininfopath)):
+            traininfopath.append("")
+            if(os.path.isfile('Slides/Default.png')):
+                traininfopic.append(Image.open('Slides/Default.png'))
+                traininfoslides.append(1)
+            else:
+                sys.exit("Default.png is not available!")
+        elif(traininfopath[i]==""):
+            if(os.path.isfile('Slides/Default.png')):
+                traininfopic.append(Image.open('Slides/Default.png'))
+                traininfoslides.append(1)
+            else:
+                sys.exit("Default.png is not available!")
+        else:
+            j=0
+            while True:
+                if(os.path.isfile('Slides/'+ traininfopath[i] + j + '.png')):
+                    traininfopic.append(Image.open('Slides/'+ traininfopath[i] + j + '.png'))
+                    j+=1
+                else:
+                    if(j==0):
+                        traininfopic.append(Image.open('Slides/Default.png'))
+                        traininfoslides.append(1)
+                    else:
+                        traininfoslides.append(j)
+                    break
+    traininfocanvas=tkinter.Canvas(traininfoshow,bg="#35271D")
+    print(traininfopic[0])
+    showing_image=ImageTk.PhotoImage(traininfopic[0],master=traininfoshow)
+    traininfocanvas.create_image(0,0,anchor="nw",image=showing_image)
+    traininfocanvas.pack(expand=True,fill=tkinter.BOTH)
+    
+
+
+    #ここまで解説ウィンドウ初期化処理
+
+
 
     while True:        
         now=datetime.datetime.now()
@@ -300,6 +366,7 @@ def main():
         pygame.display.update()
         clock.tick(50)
         root.update()
+        traininfoshow.update()
      
      
 # run the main function only if this module is executed as the main script
